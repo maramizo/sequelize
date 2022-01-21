@@ -1,110 +1,106 @@
 import { expectTypeOf } from 'expect-type';
-import {
-  Attributes,
-  CreationAttributes,
-  CreationOptional,
-  DataTypes,
-  ForeignKey,
-  InferAttributes,
-  InferCreationAttributes,
-  Model,
-  NonAttribute,
-  Sequelize,
-} from '@sequelize/core';
+import { InferAttributes, InferCreationAttributes, CreationOptional, Model, NonAttribute, Attributes, CreationAttributes } from 'sequelize';
 
-class Project extends Model<InferAttributes<Project>> {
-  declare id: number;
+class User extends Model<
+  InferAttributes<User, { omit: 'groups' }>,
+  InferCreationAttributes<User, { omit: 'groups' }>
+> {
+  declare id: CreationOptional<number>;
+  declare name: string;
+  declare anArray: CreationOptional<string[]>;
+
+  // omitted using `omit` option
+  declare groups: Group[];
+  // omitted using `NonAttribute`
+  declare projects: NonAttribute<Project>;
+
+  instanceMethod() {}
+  static staticMethod() {}
 }
-
-class User extends Model<InferAttributes<User, { omit: 'omittedAttribute' | 'omittedAttributeArray' }>,
-  InferCreationAttributes<User, { omit: 'omittedAttribute' | 'omittedAttributeArray' }>> {
-  declare optionalAttribute: CreationOptional<number>;
-  declare mandatoryAttribute: string;
-
-  declare optionalArrayAttribute: CreationOptional<string[]>;
-  declare mandatoryArrayAttribute: string[];
-
-  // note: using CreationOptional here is unnecessary, but we still ensure that it works.
-  declare nullableOptionalAttribute: CreationOptional<string | null>;
-
-  declare nonAttribute: NonAttribute<string>;
-  declare nonAttributeArray: NonAttribute<string[]>;
-  declare nonAttributeNestedArray: NonAttribute<string[][]>;
-
-  declare omittedAttribute: number;
-  declare omittedAttributeArray: number[];
-
-  declare joinedEntity?: NonAttribute<Project>;
-  declare projectId: CreationOptional<ForeignKey<number>>;
-
-  instanceMethod() {
-  }
-
-  static staticMethod() {
-  }
-}
-
-User.init({
-  mandatoryArrayAttribute: DataTypes.ARRAY(DataTypes.STRING),
-  mandatoryAttribute: DataTypes.STRING,
-  // projectId is omitted but still works, because it is branded with 'ForeignKey'
-  nullableOptionalAttribute: DataTypes.STRING,
-  optionalArrayAttribute: DataTypes.ARRAY(DataTypes.STRING),
-  optionalAttribute: DataTypes.INTEGER,
-}, { sequelize: new Sequelize() });
 
 type UserAttributes = Attributes<User>;
 type UserCreationAttributes = CreationAttributes<User>;
 
 expectTypeOf<UserAttributes>().not.toBeAny();
-expectTypeOf<UserCreationAttributes>().not.toBeAny();
 
-expectTypeOf<UserAttributes['optionalAttribute']>().not.toBeNullable();
-expectTypeOf<UserCreationAttributes['optionalAttribute']>().toBeNullable();
+{
+  class Test extends Model<InferAttributes<Test>> {
+    declare id: NonAttribute<string>;
+  }
 
-expectTypeOf<UserAttributes['mandatoryAttribute']>().not.toBeNullable();
-expectTypeOf<UserCreationAttributes['mandatoryAttribute']>().not.toBeNullable();
+  const win: Attributes<Test> = {};
+}
 
-expectTypeOf<UserAttributes['optionalArrayAttribute']>().not.toBeNullable();
-expectTypeOf<UserCreationAttributes['optionalArrayAttribute']>().toBeNullable();
+{
+  const win: UserAttributes = {
+    id: 1,
+    name: '',
+    anArray: [''],
+  };
 
-type NonUndefined<T> = T extends undefined ? never : T;
+  const fail1: UserAttributes = {
+    id: 1,
+    name: '',
+    // @ts-expect-error - 'extra' should not be present
+    extra: ''
+  };
 
-expectTypeOf<UserCreationAttributes['nullableOptionalAttribute']>().not.toEqualTypeOf<NonUndefined<UserCreationAttributes['nullableOptionalAttribute']>>();
+  // @ts-expect-error - 'name' should be present
+  const fail2: UserAttributes = {
+    id: 1,
+  };
+}
 
-expectTypeOf<UserAttributes['mandatoryArrayAttribute']>().not.toBeNullable();
-expectTypeOf<UserCreationAttributes['mandatoryArrayAttribute']>().not.toBeNullable();
+{
+  const win: UserCreationAttributes = {
+    id: undefined,
+    name: '',
+    anArray: undefined,
+  };
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('nonAttribute');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('nonAttribute');
+  const fail1: UserCreationAttributes = {
+    id: 1,
+    name: '',
+    // @ts-expect-error 'extra' does not exist
+    extra: ''
+  };
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('nonAttributeArray');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('nonAttributeArray');
+  const fail2: UserCreationAttributes = {
+    id: 1,
+    // @ts-expect-error name cannot be undefined
+    name: undefined,
+    anArray: undefined,
+  };
+}
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('nonAttributeNestedArray');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('nonAttributeNestedArray');
+type GroupAttributes = InferAttributes<Group>;
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('omittedAttribute');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('omittedAttribute');
+class Group extends Model<GroupAttributes> {
+  declare id: number;
+}
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('omittedAttributeArray');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('omittedAttributeArray');
+{
+  // @ts-expect-error - id should not be missing
+  const fail1: GroupAttributes = {};
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('instanceMethod');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('instanceMethod');
+  // @ts-expect-error - id should not be missing
+  const fail2: InferAttributes<Group, {}> = {};
 
-expectTypeOf<UserAttributes>().not.toHaveProperty('staticMethod');
-expectTypeOf<UserCreationAttributes>().not.toHaveProperty('staticMethod');
+  // @ts-expect-error - id should not be missing
+  const fail3: InferAttributes<Group, { omit: never }> = {};
+}
+
+class Project extends Model<InferAttributes<Project>> {
+  declare id: number;
+}
 
 // brands:
 
 {
-  const user = User.build({ mandatoryArrayAttribute: [], mandatoryAttribute: '' });
-
   // ensure branding does not break arrays.
-  const brandedArray: NonAttribute<string[]> = user.nonAttributeArray;
-  const anArray: string[] = user.nonAttributeArray;
-  const item: boolean = user.nonAttributeArray[0].endsWith('');
+  const brandedArray: NonAttribute<string[]> = [''];
+  const anArray: string[] = brandedArray;
+  const item: string = brandedArray[0];
 }
 
 {
@@ -121,23 +117,7 @@ expectTypeOf<UserCreationAttributes>().not.toHaveProperty('staticMethod');
 }
 
 {
-  const user = User.build({ mandatoryArrayAttribute: [], mandatoryAttribute: '' });
-  const project: Project = user.joinedEntity!;
-
-  // ensure branding does not break objects
-  const id = project.id;
-}
-
-{
-  // ensure branding does not break null
-  const brandedString: NonAttribute<string | null> = null;
-}
-
-{
-  class User2 extends Model<InferAttributes<User2>, InferCreationAttributes<User2>> {
-    declare nullableAttribute: string | null;
-  }
-
-  // this should work, all null attributes are optional in Model.create
-  User2.create({});
+  // ensure branding does not break instances
+  const brandedUser: NonAttribute<User> = new User();
+  const aUser: User = brandedUser;
 }

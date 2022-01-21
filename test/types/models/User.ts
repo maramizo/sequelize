@@ -11,7 +11,7 @@ import {
   Model,
   ModelStatic,
   Op
-} from '@sequelize/core';
+} from 'sequelize';
 import { sequelize } from '../connection';
 
 type NonUserAttributes = 'group';
@@ -115,9 +115,9 @@ User.addHook('afterDestroy', async (instance, options) => {
 });
 
 // Model#addScope
-User.addScope('withoutLastName', {
+User.addScope('withoutFirstName', {
   where: {
-    lastName: {
+    firstName: {
       [Op.is]: null
     }
   }

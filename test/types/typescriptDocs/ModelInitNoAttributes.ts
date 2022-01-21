@@ -1,11 +1,17 @@
-import { Sequelize, Model, DataTypes } from '@sequelize/core';
+/**
+ * Keep this file in sync with the code in the "Usage without strict types for
+ * attributes" section in /docs/manual/other-topics/typescript.md
+ *
+ * Don't include this comment in the md file.
+ */
+import { Sequelize, Model, DataTypes } from 'sequelize';
 
 const sequelize = new Sequelize('mysql://root:asd123@localhost:3306/mydb');
 
 class User extends Model {
-  declare id: number;
-  declare name: string;
-  declare preferredName: string | null;
+  public id!: number; // Note that the `null assertion` `!` is required in strict mode.
+  public name!: string;
+  public preferredName!: string | null; // for nullable fields
 }
 
 User.init(
