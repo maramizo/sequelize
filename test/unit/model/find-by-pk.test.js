@@ -5,9 +5,11 @@ const chai = require('chai');
 const expect = chai.expect;
 const Support = require('../support');
 
+const Sequelize = Support.Sequelize;
+const Op = Sequelize.Op;
 const current = Support.sequelize;
 const sinon = require('sinon');
-const { DataTypes, Sequelize } = require('@sequelize/core');
+const DataTypes = require('../../../lib/data-types');
 
 describe(Support.getTestDialectTeaser('Model'), () => {
   describe('method findByPk', () => {
