@@ -66,6 +66,8 @@ export function addTicks(s: string, tickChar: string = TICK_CHAR): string {
   return tickChar + removeTicks(s, tickChar) + tickChar;
 }
 
-export function removeTicks(s: string, tickChar: string = TICK_CHAR): string {
+export function removeTicks(s: string | any, tickChar: string = TICK_CHAR): string {
+  if(s.name)
+    s = s.name
   return s.replace(new RegExp(tickChar, 'g'), '');
 }
